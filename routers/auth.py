@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from models import User
 from passlib.context import CryptContext
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from datetime import datetime, timezone , timedelta
-from jose import jwt
+from jose import jwt, JWTError
 import os
 from dotenv import load_dotenv
 
@@ -69,6 +69,27 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+
+async def authenticate_current_user(token: Annotated[str, Depends(OAuth2PasswordBearer)]):
+    try:
+        payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+        id = payload.get("id")
+        username = payload.get("sub")
+        role = payload.get("role")
+        if id is None or username is None or role is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="User Verification Failed")
+        return {
+            "id": id,
+            "username": username,
+            "role": role
+        }
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="User Verification Failed")
+
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def create_user(db: database_dependency, user_data: CreateUserModel):
     new_user = User(
@@ -86,7 +107,8 @@ async def create_user(db: database_dependency, user_data: CreateUserModel):
 async def login_for_access_token(db: database_dependency, form_data: Oauth_dependency):
     user = confirm_and_get_user(form_data.username, form_data.password, db)
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid Credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid Credentials")
     token = assign_token(user.id, user.username, user.role, timedelta(minutes=30))
     return {
         "access_token": token,
