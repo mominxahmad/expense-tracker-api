@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 from starlette import status
-
 import models
 from database import engine
-from routers import auth
+from routers import auth,expenses
 
 
 app=FastAPI(
@@ -17,7 +16,7 @@ models.Base.metadata.create_all(bind=engine)
 
 
 app.include_router(auth.router)
-
+app.include_router(expenses.router)
 
 
 @app.get("/", status_code=status.HTTP_200_OK, tags=["API"])

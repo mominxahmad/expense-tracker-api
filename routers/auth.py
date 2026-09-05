@@ -33,9 +33,9 @@ database_dependency = Annotated[Session,Depends(get_db)]
 
 class CreateUserModel(BaseModel):
     email: str = Field(description="User's Email address", examples=["johndoe@email.com"] , pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-    username: str = Field(description="User's Username", examples=["johndoe"], min_length=4,max_length=20)
-    first_name: str = Field(description="User's First Name", examples=["John"], min_length=4,max_length=20)
-    last_name: str = Field(description="User's Last Name", examples=["Doe"], min_length=4,max_length=20)
+    username: str = Field(description="User's Username", examples=["johndoe"], min_length=3,max_length=20)
+    first_name: str = Field(description="User's First Name", examples=["John"], min_length=3,max_length=20)
+    last_name: str = Field(description="User's Last Name", examples=["Doe"], min_length=3,max_length=20)
     password: str = Field(description="Password with 6+ characters", min_length=6)
 
 
@@ -69,8 +69,8 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-
-async def authenticate_current_user(token: Annotated[str, Depends(OAuth2PasswordBearer)]):
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/auth/login")
+async def authenticate_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
         id = payload.get("id")
