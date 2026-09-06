@@ -4,7 +4,7 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 from routers.auth import authenticate_current_user
 from starlette import status
-from models import User
+from models import User, Expense
 from pydantic import BaseModel
 
 
@@ -55,4 +55,17 @@ async def get_user_by_id(db: database_dependency, admin: admin_dependency, user_
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User Not Found")
     return user_to_return
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user_by_id(db: database_dependency, admin: admin_dependency, user_id: int = Path(gt=0)):
+    user_to_delete = db.query(User).filter(User.id==user_id).first()
+    if user_to_delete is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User Not Found")
+    expenses_to_delete = db.query(Expense).filter(Expense.user_id==user_id).all()
+    for expense in expenses_to_delete:
+        db.delete(expense)
+    db.delete(user_to_delete)
+    db.commit()
 
