@@ -63,3 +63,12 @@ async def update_expense_by_id(db: database_dependency, user: user_dependency, u
     task_to_update.description = update_model.description
     db.add(task_to_update)
     db.commit()
+
+
+@router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_expense_by_id(db: database_dependency, user: user_dependency, expense_id: int = Path(gt=0)):
+    task_to_delete = db.query(Expense).filter(Expense.id==expense_id).filter(Expense.user_id==user.get("id")).first()
+    if task_to_delete is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense Not Found")
+    db.delete(task_to_delete)
+    db.commit()
