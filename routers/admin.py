@@ -95,3 +95,14 @@ async def get_expenses_by_user_id(db: database_dependency, admin: admin_dependen
                             detail="User Not Found")
     expenses_to_return = db.query(Expense).filter(Expense.user_id==user_id).all()
     return expenses_to_return
+
+
+@router.delete("/expenses/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_expense_by_expense_id(db: database_dependency, admin: admin_dependency,
+                                       expense_id: int = Path(gt=0)):
+    expense_to_delete = db.query(Expense).filter(Expense.id==expense_id).first()
+    if expense_to_delete is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Expense Not Found")
+    db.delete(expense_to_delete)
+    db.commit()
