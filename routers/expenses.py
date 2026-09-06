@@ -48,5 +48,18 @@ async def create_new_expense(db: database_dependency, user: user_dependency, new
     new_expense_model = Expense(**new_expense.model_dump(),user_id=user.get("id"))
     db.add(new_expense_model)
     db.commit()
-    db.refresh()
+    db.refresh(new_expense_model)
     return new_expense_model
+
+
+@router.put("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def update_expense_by_id(db: database_dependency, user: user_dependency, update_model: CreateExpenseModel, expense_id: int = Path(gt=0)):
+    task_to_update = db.query(Expense).filter(Expense.id==expense_id).filter(Expense.user_id==user.get("id")).first()
+    if task_to_update is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense Not Found")
+    task_to_update.title = update_model.title
+    task_to_update.category = update_model.category
+    task_to_update.amount = update_model.amount
+    task_to_update.description = update_model.description
+    db.add(task_to_update)
+    db.commit()
