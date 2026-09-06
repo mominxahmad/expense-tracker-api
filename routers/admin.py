@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
 from database import SessionLocal
-from typing import Annotated
+from typing import Annotated, Literal
 from sqlalchemy.orm import Session
 from routers.auth import authenticate_current_user
 from starlette import status
 from models import User, Expense
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -42,6 +42,10 @@ class UserResponseModel(BaseModel):
     role:  str
 
 
+class UserRoleModel(BaseModel):
+    role: Literal["user","admin"] = Field(examples=["user/admin"])
+
+
 @router.get("/users", response_model=list[UserResponseModel], status_code=status.HTTP_200_OK)
 async def get_all_users(db: database_dependency, admin: admin_dependency):
     users_to_return = db.query(User).all()
@@ -55,6 +59,20 @@ async def get_user_by_id(db: database_dependency, admin: admin_dependency, user_
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="User Not Found")
     return user_to_return
+
+
+@router.patch("/users/{user_id}/role",response_model=UserResponseModel,
+            status_code=status.HTTP_200_OK)
+async def update_user_role(db: database_dependency, admin: admin_dependency,
+                           user_role: UserRoleModel,user_id: int = Path(gt=0)):
+    user_to_update = db.query(User).filter(User.id==user_id).first()
+    if user_to_update is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User Not Found")
+    user_to_update.role = user_role.role
+    db.commit()
+    db.refresh(user_to_update)
+    return user_to_update
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
