@@ -3,7 +3,8 @@ from sqlalchemy.orm import sessionmaker
 from models import Base, Expense, User
 import pytest
 from routers.auth import bcrypt_context
-
+from fastapi.testclient import TestClient
+from main import app
 
 # mock db setup for testing using sqlite
 TEST_DATABASE_URL = "sqlite:///./testdb.db"
@@ -14,6 +15,8 @@ TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=Fals
 
 Base.metadata.create_all(bind=engine)
 
+
+client = TestClient(app)
 
 # to override dependencies
 def override_get_db():
