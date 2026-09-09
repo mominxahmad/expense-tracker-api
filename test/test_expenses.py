@@ -74,3 +74,8 @@ def test_update_expense_by_INVALID_id(test_expense):
     }
     response = client.put("/expenses/99", json=request_data)
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_expense_by_id(test_expense):
+    response = client.delete("/expenses/1")
+    assert response.status_code == status.HTTP_204_NO_CONTENT
