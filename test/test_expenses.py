@@ -53,3 +53,24 @@ def test_create_new_expense():
         "description" : "",
         "user_id" : 1
     }
+
+
+def test_update_expense_by_id(test_expense):
+    request_data = {
+        "title": "updated expense",
+        "amount": 3000,
+        "category": "hello",
+        "description": "lorem ipsum delor"
+    }
+    response = client.put("/expenses/1",json=request_data)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+def test_update_expense_by_INVALID_id(test_expense):
+    request_data = {
+        "title": "updated expense",
+        "amount": 3000,
+        "category": "hello",
+        "description": "lorem ipsum delor"
+    }
+    response = client.put("/expenses/99", json=request_data)
+    assert response.status_code == status.HTTP_404_NOT_FOUND
