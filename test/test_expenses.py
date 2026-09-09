@@ -35,3 +35,21 @@ def test_get_expense_by_INVALID_id(test_expense):
     response = client.get("/expenses/99")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == { "detail" : "Expense Not Found" }
+
+def test_create_new_expense():
+    request_data = {
+        "title" : "test expense",
+        "amount" : 3456,
+        "category" : "food",
+        "description": ""
+    }
+    response = client.post("/expenses/",json=request_data)
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json() == {
+        "id" : 1,
+        "title" : "test expense",
+        "amount" : 3456,
+        "category" : "food",
+        "description" : "",
+        "user_id" : 1
+    }
