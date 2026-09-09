@@ -6,6 +6,7 @@
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red.svg)
 ![Alembic](https://img.shields.io/badge/Alembic-Migrations-orange.svg)
 ![JWT](https://img.shields.io/badge/JWT-Authentication-black.svg)
+![Pytest](https://img.shields.io/badge/Pytest-Testing-20a664.svg)
 ![Status](https://img.shields.io/badge/Status-Learning-yellow.svg)
 
 A REST API for managing personal expenses, built with **FastAPI, PostgreSQL, SQLAlchemy, and Alembic**.
@@ -33,6 +34,8 @@ This project gave me hands-on practice with:
 - Alembic database migrations
 - Environment variables
 - Swagger / OpenAPI documentation
+- Unit and integration testing with Pytest
+- Test database isolation and fixture management
 
 ---
 
@@ -49,6 +52,7 @@ This project gave me hands-on practice with:
 | **JWT** | Authentication |
 | **bcrypt** | Password hashing |
 | **Uvicorn** | ASGI server |
+| **Pytest** | Automated testing framework |
 
 ---
 
@@ -286,16 +290,24 @@ expense-tracker-api/
 ├── requirements.txt
 ├── example.env
 ├── alembic.ini
+├── pytest.ini
 │
 ├── alembic/
 │   ├── env.py
 │   ├── script.py.mako
 │   └── versions/
 │
-└── routers/
-    ├── auth.py
-    ├── expenses.py
-    └── admin.py
+├── routers/
+│   ├── auth.py
+│   ├── expenses.py
+│   └── admin.py
+│
+└── test/
+    ├── utils.py
+    ├── test_main.py
+    ├── test_auth.py
+    ├── test_expenses.py
+    └── test_admin.py
 ```
 
 The application is separated into routers for authentication, regular expense operations, and admin operations.
@@ -360,6 +372,17 @@ The API will be available at:
 
 ```text
 http://127.0.0.1:8000
+```
+
+### 7. Run the Tests
+
+This project includes a comprehensive test suite built with **Pytest**. 
+The tests use an isolated, in-memory SQLite database to ensure your actual development database is never modified or wiped during testing.
+
+To run the tests, simply execute:
+
+```bash
+pytest
 ```
 
 ---
@@ -434,7 +457,6 @@ The API uses standard HTTP status codes for common situations:
 
 There are a few things I'd like to add as I continue improving my backend skills:
 
-- Pytest tests
 - Docker and Docker Compose
 - CI/CD pipeline
 - Pagination
