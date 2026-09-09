@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from main import app
 
 # mock db setup for testing using sqlite
-TEST_DATABASE_URL = "sqlite:///./testdb.db"
+TEST_DATABASE_URL = "sqlite://"  #in-memory/non-presistent
 engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread":False},
                        poolclass=StaticPool)
 TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
@@ -34,6 +34,13 @@ def override_authenticate_current_user():
     }
 
 
+@pytest.fixture(autouse=True)
+def setup_database():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
 @pytest.fixture
 def test_expense():
     db = TestingSessionLocal()
@@ -47,9 +54,6 @@ def test_expense():
     db.add(expense)
     db.commit()
     yield expense
-    with engine.connect() as connection:
-        connection.execute(text("DELETE FROM expense;"))
-        connection.commit()
     db.close()
 
 
@@ -67,7 +71,4 @@ def test_user():
     db.add(user)
     db.commit()
     yield user
-    with engine.connect() as connection:
-        connection.execute(text("DELETE FROM user;"))
-        connection.commit()
     db.close()
