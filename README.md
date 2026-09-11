@@ -5,6 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18+-4169E1.svg)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red.svg)
 ![Alembic](https://img.shields.io/badge/Alembic-Migrations-orange.svg)
+![Docker](https://img.shields.io/badge/Docker-2CA5E0?logo=docker&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-Authentication-black.svg)
 ![Pytest](https://img.shields.io/badge/Pytest-Testing-20a664.svg)
 ![Status](https://img.shields.io/badge/Status-Learning-yellow.svg)
@@ -36,6 +37,9 @@ This project gave me hands-on practice with:
 - Swagger / OpenAPI documentation
 - Unit and integration testing with Pytest
 - Test database isolation and fixture management
+- Containerizing applications with Docker
+- Orchestrating multi-container setups with Docker Compose
+- Database persistence using Docker volumes
 
 ---
 
@@ -49,6 +53,8 @@ This project gave me hands-on practice with:
 | **SQLAlchemy** | ORM and database operations |
 | **Pydantic** | Request validation and schemas |
 | **Alembic** | Database migrations |
+| **Docker** | Containerization |
+| **Docker Compose** | Multi-container orchestration |
 | **JWT** | Authentication |
 | **bcrypt** | Password hashing |
 | **Uvicorn** | ASGI server |
@@ -289,6 +295,8 @@ expense-tracker-api/
 ├── models.py
 ├── requirements.txt
 ├── example.env
+├── Dockerfile
+├── docker-compose.yml
 ├── alembic.ini
 ├── pytest.ini
 │
@@ -314,73 +322,74 @@ The application is separated into routers for authentication, regular expense op
 
 ---
 
-## Quick Start
+## Quick Start (Docker Recommended)
+
+The easiest way to run the API and PostgreSQL database is using Docker Compose. Data persists automatically in a Docker named volume.
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/mominxahmad/expense-tracker-api.git
+git clone [https://github.com/mominxahmad/expense-tracker-api.git](https://github.com/mominxahmad/expense-tracker-api.git)
 cd expense-tracker-api
 ```
 
-### 2. Create a virtual environment
+### 2. Set up environment variables
+
+Copy the provided `example.env` file to a new file named `.env`:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+cp example.env .env
 ```
+The default values are already configured to work with the Docker setup. 
 
-On Windows:
-
-```powershell
-.venv\Scripts\activate
-```
-
-### 3. Install dependencies
+### 3. Start the containers
 
 ```bash
-pip install -r requirements.txt
+docker compose up -d --build
 ```
 
-### 4. Set up PostgreSQL
+The API will be available at `http://127.0.0.1:8000`.
 
-Create a PostgreSQL database named:
+---
 
-```text
-ExpenseTrackerAPI
-```
+## Local Setup (Without Docker)
 
-### 5. Create `.env`
+If you prefer running directly on your host machine without Docker:
 
-Create a `.env` file using `example.env` as a reference:
+1. **Set up a virtual environment:**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Set up PostgreSQL:**
+   Create a local PostgreSQL database named `expense_tracker`.
+4. **Update `.env` for local hosting:**
+   Change the `DATABASE_URL` in your `.env` file to point to `localhost` instead of the Docker service name (`postgres`):
+   ```env
+   DATABASE_URL="postgresql://postgres:your_password@localhost:5432/expense_tracker"
+   ```
+5. **Run the server:**
+   ```bash
+   uvicorn main:app --reload
+   ```
 
-```env
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/ExpenseTrackerAPI
-SECRET_KEY=YOUR_SECRET_KEY
-ALGORITHM=HS256
-```
+---
 
-
-
-### 6. Start the API
-
-```bash
-uvicorn main:app --reload
-```
-
-The API will be available at:
-
-```text
-http://127.0.0.1:8000
-```
-
-### 7. Run the Tests
+## Running the Tests
 
 This project includes a comprehensive test suite built with **Pytest**. 
 The tests use an isolated, in-memory SQLite database to ensure your actual development database is never modified or wiped during testing.
 
-To run the tests, simply execute:
+To run tests inside the Docker container:
+```bash
+docker compose exec backend pytest
+```
 
+To run the tests locally (make sure your virtual environment is activated):
 ```bash
 pytest
 ```
@@ -457,7 +466,6 @@ The API uses standard HTTP status codes for common situations:
 
 There are a few things I'd like to add as I continue improving my backend skills:
 
-- Docker and Docker Compose
 - CI/CD pipeline
 - Pagination
 - Expense filtering and sorting
