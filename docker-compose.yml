@@ -4,3 +4,14 @@ services:
     container_name: ExpenseTrackerAPI
     ports:
       - "8000:8000"
+  postgres:
+    image: postgres:latest
+    container_name: postgres-ExpenseTrackerAPI
+    environment:
+      POSTGRES_DB: ${DB_POSTGRES}
+      POSTGRES_USER: ${USER_POSTGRES}
+      POSTGRES_PASSWORD: ${PASSWORD_POSTGRES}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
