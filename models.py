@@ -1,25 +1,26 @@
 from database import Base
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Integer, String, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class User(Base):
     __tablename__ = "user"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, nullable=False)
-    username = Column(String, unique=True, nullable=False)
-    first_name = Column(String, nullable=False)
-    last_name = Column(String, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    role = Column(String, default='user', nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    first_name: Mapped[str] = mapped_column(String(20), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(20), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String(6), default='user', nullable=False)
 
 
 class Expense(Base):
     __tablename__ = "expense"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    amount = Column(Integer, nullable=False)
-    category = Column(String, nullable=False)
-    description = Column(String)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(50), nullable=False)
+    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+    description: Mapped[str] = mapped_column(String(200))
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), nullable=False)
