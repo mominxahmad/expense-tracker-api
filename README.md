@@ -4,13 +4,14 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.141+-00a393.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18+-4169E1.svg)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red.svg)
-![Alembic](https://img.shields.io/badge/Alembic-Migrations-orange.svg)
-![Docker](https://img.shields.io/badge/Docker-2CA5E0?logo=docker&logoColor=white)
+![Async](https://img.shields.io/badge/Async-asyncio-blue.svg)
 ![JWT](https://img.shields.io/badge/JWT-Authentication-black.svg)
+![Docker](https://img.shields.io/badge/Docker-2CA5E0?logo=docker&logoColor=white)
+![Alembic](https://img.shields.io/badge/Alembic-Migrations-orange.svg)
 ![Pytest](https://img.shields.io/badge/Pytest-Testing-20a664.svg)
 ![Status](https://img.shields.io/badge/Status-Learning-yellow.svg)
 
-A REST API for managing personal expenses, built with **FastAPI, PostgreSQL, SQLAlchemy, and Alembic**.
+A REST API for managing personal expenses, built with **FastAPI, PostgreSQL, SQLAlchemy, and Alembic**, using asynchronous database operations..
 
 I built this project while learning FastAPI and backend development. The main goal was to get practical experience with building an API, working with a real PostgreSQL database, implementing authentication and authorization, and managing database changes with migrations.
 
@@ -35,31 +36,38 @@ This project gave me hands-on practice with:
 - Alembic database migrations
 - Environment variables
 - Swagger / OpenAPI documentation
-- Unit and integration testing with Pytest
-- Test database isolation and fixture management
+- Automated API and database testing with Pytest
+- Isolated asynchronous test database with SQLite
+- Test fixtures with pytest-asyncio
 - Containerizing applications with Docker
 - Orchestrating multi-container setups with Docker Compose
 - Database persistence using Docker volumes
+- Asynchronous programming with `async` / `await`
+- SQLAlchemy 2.x AsyncSession
+- Asynchronous PostgreSQL access with asyncpg
+- Asynchronous testing with Pytest and pytest-asyncio
 
 ---
 
 ## Tech Stack
 
-| Technology | Purpose |
-|---|---|
-| **Python** | Main programming language |
-| **FastAPI** | API framework |
-| **PostgreSQL** | Relational database |
-| **SQLAlchemy** | ORM and database operations |
-| **Pydantic** | Request validation and schemas |
-| **Alembic** | Database migrations |
-| **Docker** | Containerization |
-| **Docker Compose** | Multi-container orchestration |
-| **JWT** | Authentication |
-| **bcrypt** | Password hashing |
-| **Uvicorn** | ASGI server |
-| **Pytest** | Automated testing framework |
-
+| Technology         | Purpose                                  |
+|--------------------|------------------------------------------|
+| **Python**         | Main programming language                |
+| **FastAPI**        | API framework                            |
+| **PostgreSQL**     | Production Relational database           |
+| **SQLAlchemy 2.x** | ORM and asynchronous database operations |
+| **Asyncpg**        | Asynchronous PostgreSQL driver           |
+| **Pydantic**       | Request validation and schemas           |
+| **Alembic**        | Database migrations                      |
+| **Docker**         | Containerization                         |
+| **Docker Compose** | Multi-container orchestration            |
+| **JWT**            | Authentication                           |
+| **bcrypt**         | Password hashing                         |
+| **Uvicorn**        | ASGI server                              |
+| **Pytest**         | Automated testing              |
+| **Pytest-asyncio** | Async test support              |
+| **SQLite + aiosqlite** | Isolated test database              |
 ---
 
 ## Features
@@ -180,8 +188,18 @@ The JWT contains information used by the API to identify the authenticated user 
 
 ## Database
 
-The API uses **PostgreSQL** as its database and **SQLAlchemy ORM** for database operations.
-
+The API uses **PostgreSQL** as its production database and **SQLAlchemy 2.x's asynchronous API** for database operations.
+```
+FastAPI
+   ↓
+AsyncSession
+   ↓
+SQLAlchemy 2.x
+   ↓
+asyncpg
+   ↓
+PostgreSQL
+```
 The database contains two main tables.
 
 ### `user`
@@ -228,10 +246,14 @@ SQLAlchemy's ORM is used to interact with PostgreSQL through Python models.
 For example, retrieving an expense belonging to the current user is handled through the SQLAlchemy model:
 
 ```python
-db.query(Expense).filter(
-    Expense.id == expense_id,
-    Expense.user_id == user.get("id")
-).first()
+response = await db.execute(
+    select(Expense).where(
+        Expense.id == expense_id,
+        Expense.user_id == user.get("id")
+    )
+)
+
+expense = response.scalar_one_or_none()
 ```
 
 The `user_id` check is important because it prevents a regular user from accessing another user's expense simply by changing the `expense_id`.
@@ -242,9 +264,8 @@ The `user_id` check is important because it prevents a regular user from accessi
 
 I added **Alembic** to practice handling database schema changes.
 
-The initial tables are currently created using SQLAlchemy's `create_all()` when the application starts.
-
-For later schema changes, I use Alembic migrations.
+The application currently uses SQLAlchemy's create_all() for initial table creation during startup. 
+Alembic is included to practice managing subsequent schema changes through migrations.
 
 The workflow is:
 
@@ -329,7 +350,7 @@ The easiest way to run the API and PostgreSQL database is using Docker Compose. 
 ### 1. Clone the repository
 
 ```bash
-git clone [https://github.com/mominxahmad/expense-tracker-api.git](https://github.com/mominxahmad/expense-tracker-api.git)
+git clone https://github.com/mominxahmad/expense-tracker-api.git
 cd expense-tracker-api
 ```
 
@@ -370,7 +391,7 @@ If you prefer running directly on your host machine without Docker:
 4. **Update `.env` for local hosting:**
    Change the `DATABASE_URL` in your `.env` file to point to `localhost` instead of the Docker service name (`postgres`):
    ```env
-   DATABASE_URL="postgresql://postgres:your_password@localhost:5432/expense_tracker"
+   DATABASE_URL="postgresql+asyncpg://postgres:your_password@localhost:5432/expense_tracker"
    ```
 5. **Run the server:**
    ```bash
@@ -381,8 +402,8 @@ If you prefer running directly on your host machine without Docker:
 
 ## Running the Tests
 
-This project includes a comprehensive test suite built with **Pytest**. 
-The tests use an isolated, in-memory SQLite database to ensure your actual development database is never modified or wiped during testing.
+This project includes a test suite built with **Pytest** and **pytest-asyncio**.
+The tests use an isolated, in-memory **SQLite** database through `aiosqlite`. This ensures that the actual PostgreSQL development database is not modified during testing.
 
 To run tests inside the Docker container:
 ```bash
@@ -473,13 +494,16 @@ There are a few things I'd like to add as I continue improving my backend skills
 - Refresh tokens
 - Better handling of monetary values using `Decimal` / `Numeric`
 - More separated request and response schemas
+- Database relationship configuration and cascading deletes
+- Improved API error handling
+- Production monitoring and logging
 
 ---
 
 ## Why I Built This
 
-This project was mainly about getting more comfortable with backend development as part of my Udemy FastAPI certification.
+I built this project as part of my personal backend development learning journey.
 
-Instead of only following tutorials, I wanted to build something where I had to deal with an actual database, authentication, authorization, migrations, and different types of API endpoints.
+The goal was to go beyond basic CRUD APIs and practice building a more complete backend application with authentication, authorization, database relationships, asynchronous database operations, testing, migrations, and Docker-based development.
 
-It's still a learning project, but it gave me practical experience with several of the tools and concepts I want to use in future backend projects.
+This project also helped me understand how the different parts of a backend application fit together, from API requests and validation to database operations, authentication, and deployment.
