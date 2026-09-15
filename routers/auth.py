@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
-from database import SessionLocal
+from database import get_db
 from typing import Annotated
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel, Field, EmailStr
 from models import User
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -11,6 +11,7 @@ from datetime import datetime, timezone , timedelta
 from jose import jwt, JWTError
 import os
 from dotenv import load_dotenv
+from sqlalchemy import select
 
 
 router = APIRouter(prefix="/auth", tags=["Authorization"])
@@ -21,18 +22,11 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-database_dependency = Annotated[Session,Depends(get_db)]
+database_dependency = Annotated[AsyncSession,Depends(get_db)]
 
 
 class CreateUserModel(BaseModel):
-    email: str = Field(description="User's Email address", examples=["johndoe@email.com"] , pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    email: EmailStr = Field(description="User's Email address", examples=["johndoe@email.com"])
     username: str = Field(description="User's Username", examples=["johndoe"], min_length=3,max_length=20)
     first_name: str = Field(description="User's First Name", examples=["John"], min_length=3,max_length=20)
     last_name: str = Field(description="User's Last Name", examples=["Doe"], min_length=3,max_length=20)
@@ -45,8 +39,11 @@ bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 Oauth_dependency=Annotated[OAuth2PasswordRequestForm, Depends()]
 
 
-def confirm_and_get_user(username: str, plain_password: str, db: Session):
-    user = db.query(User).filter(User.username==username).first()
+async def confirm_and_get_user(username: str, plain_password: str, db: AsyncSession):
+    response = await db.execute(
+        select(User).where(User.username==username)
+    )
+    user = response.scalar_one_or_none()
     if user is None:
         return False
     if not bcrypt_context.verify(plain_password, user.hashed_password):
@@ -70,7 +67,7 @@ class Token(BaseModel):
     token_type: str
 
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/auth/login")
-async def authenticate_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+def authenticate_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
         id = payload.get("id")
@@ -100,12 +97,13 @@ async def create_user(db: database_dependency, user_data: CreateUserModel):
         hashed_password = bcrypt_context.hash(user_data.password)
     )
     db.add(new_user)
-    db.commit()
+    await db.commit()
+    return {"message":"registered successfully"}
 
 
 @router.post("/login", response_model=Token)
 async def login_for_access_token(db: database_dependency, form_data: Oauth_dependency):
-    user = confirm_and_get_user(form_data.username, form_data.password, db)
+    user = await confirm_and_get_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid Credentials")
